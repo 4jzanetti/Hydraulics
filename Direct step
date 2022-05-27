@@ -1,0 +1,71 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Open Channel Flow (Chaudry, 1959) p158
+
+i = 0.001 # bottom slope (-)
+Q = 30 # discharge (m3/s)
+b = 10 # bottom width (m)
+m = 2 # side slope (2H:1V)
+h_x0 = 5 # Depth at the downstream end (i.e., at x = 0) (m)
+n = 0.013 # Manning roughness
+g = 9.81 # gravity acceleration (m/s2)
+
+h_normal = 1.16 # normal depth (m) by Manning
+
+dh = 0.1 # depth interval (m)
+
+h = np.arange(h_x0, h_normal-dh, -dh)
+#print(h)
+
+#h = 5
+
+#for i in range(len(index)):
+#    h[i] = h - dh
+#    if h < h_normal: break
+#    print(h[i])    
+
+h = np.array(h)
+  
+A = h * (b + (b + 2*m*h))/2
+
+v = Q / A
+
+v2 = v**2 / (2*g)
+
+ES = h + v2
+
+P = b + 2 * np.sqrt(h**2 + (m*h)**2)
+
+R = A / P
+
+i_ES = ( Q * n / (A * R**(2/3)) )**2
+
+i_ES_ave = np.zeros(len(h)-1)
+for x in range(len(h)-1):
+    i_ES_ave[x] = (i_ES[x] + i_ES[x+1]) / 2
+i_ES_ave = np.concatenate((np.zeros(1), i_ES_ave)) # insert dummy 
+
+delta_ES = np.zeros(len(h)-1)
+for x in range(len(h)-1):
+    delta_ES[x] = ES[x+1] - ES[x]
+delta_ES = np.concatenate((np.zeros(1), delta_ES)) # insert dummy 
+
+delta_l = delta_ES / (i - i_ES_ave)
+
+sigma_l = np.cumsum(delta_l)
+
+direct_step = {'h': h, 'A': A, 'v': v, 'v2': v2, 'ES': ES, 'P': P, 'R': R, 'i_ES': i_ES, 'i_ES_ave': i_ES_ave, 'delta_ES': delta_ES, 'delta_l': delta_l, 'sigma_l': sigma_l}    
+df = pd.DataFrame(direct_step, columns = ['h', 'A', 'v', 'v2', 'ES', 'P', 'R', 'i_ES', 'i_ES_ave', 'delta_ES', 'delta_l', 'sigma_l'])
+print(df)
+
+plt.subplots(facecolor = 'w')
+plt.title('Backwater curve')
+plt.xlabel('x (m)')
+plt.ylabel('h (m)')
+plt.grid(True)
+#plt.xlim(0, 14)
+#plt.ylim(0, 10)
+plt.plot(sigma_l, h, 'b', linewidth = 2)
+#plt.plot(KE, h, 'r', linewidth = 2)
